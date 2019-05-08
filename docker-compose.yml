@@ -1,0 +1,114 @@
+version: '3'
+services:
+  nginx:
+    depends_on:
+     - php7.2
+    image: nginx:latest
+    expose:
+     - 80
+     - 443
+    ports:
+     - "80:80"
+     - "443:443"
+    # external_links:
+    #  - php7.2:php7.2
+    env_file: .env
+    volumes:
+     - ${WORK_DIR}:/var/www/html/:rw
+     - ./nginx/conf.d:/etc/nginx/conf.d
+     - ./nginx/logs:/var/log/nginx/
+     #for mac,can improve read io speed 提升读取速度
+     #- ./www:/var/www/html/:cached 
+     #- ./nginx/conf.d:/etc/nginx/conf.d:cached
+     #- ./nginx/logs:/var/log/nginx/:delegated
+    environment:
+      TZ: Asia/Shanghai
+    restart: on-failure
+  php7.2:
+    build: ./php/php7.2
+    depends_on:
+      - mysql
+      - redis
+      - rabbitmq
+#    image: php:7.1.0-fpm  # see below
+    expose:
+      - 9000
+    ports:
+      - "9000:9000"
+    volumes:
+      - ${WORK_DIR}/:/var/www/html/:rw
+      - ./php/php7.2/supervisor/:/etc/supervisor/conf.d/
+      # for mac
+      
+      
+        # - ./www/:/var/www/html/:cached
+        # - ./php/php7.2-etc/:/usr/local/etc/
+        # - ./php/conf.d:/usr/local/etc/php/conf.d
+    environment:
+      MYSQL_HOST: mysql:3306
+      REDIS_HOST: redis:6379
+      TZ: Asia/Shanghai
+    restart: on-failure
+  mysql:
+    image: mariadb
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+        - ./mysql/data:/var/lib/mysql
+        - ./mysql/config:/etc/mysql/conf.d
+    expose:
+      - 3306
+    ports:
+      - "3308:3306"
+
+
+  redis:
+    image: redis:latest
+    expose:
+      - 6379
+    ports:
+      - "6379:6379"
+    environment:
+      TZ: Asia/Shanghai
+    restart: on-failure
+
+  rabbitmq:
+    image: rabbitmq:3.7.2-management
+    expose:
+      - 5672
+      - 15672
+    ports:
+      - "15672:15672"
+    restart: on-failure
+    environment:
+      TZ: Asia/Shanghai
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+#     RABBITMQ_DEFAULT_VHOST: /
+
+      # phpmyadmin:
+      #   image: phpmyadmin/phpmyadmin
+      #   expose:
+      #     - 8080
+      #     - 80
+      #   ports:
+      #     - "8080:80"
+      #   depends_on:
+      #     - "mysql"
+      #   environment:
+      #     PMA_HOST: mysql
+      #     PMA_USER: root
+      #     PMA_PASSWORD: root
+      #     TZ: Asia/Shanghai
+      #   restart: on-failure
+
+  # mongo:
+  #   image: mongo
+  #   expose:
+  #     - 27017
+  #   ports:
+  #     - "27017:27017"
+
+ 
